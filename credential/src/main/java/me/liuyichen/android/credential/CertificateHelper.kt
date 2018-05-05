@@ -1,5 +1,8 @@
 package me.liuyichen.android.credential
 
+import android.content.Context
+import android.security.KeyChain
+import android.security.KeyChainException
 import sun.security.x509.CertAndKeyGen
 import sun.security.x509.X500Name
 import java.io.File
@@ -8,6 +11,7 @@ import java.io.IOException
 import java.security.*
 import java.security.cert.Certificate
 import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
 
 /**
  * CertificateHepler
@@ -17,7 +21,7 @@ import java.security.cert.CertificateException
  */
 object CertificateHelper {
 
-    private const val TYPE_PKCS12 = "PKCS12"
+    public const val TYPE_PKCS12 = "PKCS12"
 
     @Throws(KeyStoreException::class, NoSuchAlgorithmException::class, CertificateException::class, IOException::class)
     private fun createKeyStore(alias: String, key: Key, password: CharArray,
@@ -26,9 +30,9 @@ object CertificateHelper {
         val keyStore = KeyStore.getInstance(TYPE_PKCS12)
         keyStore.load(null, password)
         keyStore.setKeyEntry(alias, key, password, chain)
-        val fos = FileOutputStream(filePath)
-        keyStore.store(fos, password)
-        fos.close()
+        FileOutputStream(filePath).use {
+            keyStore.store(it, password)
+        }
     }
 
     @Throws(NoSuchAlgorithmException::class, NoSuchProviderException::class, InvalidKeyException::class, IOException::class, CertificateException::class, SignatureException::class, KeyStoreException::class)
@@ -51,14 +55,40 @@ object CertificateHelper {
         createKeyStore("RootCA", rootCertAndKeyGen.privateKey, password
                 .toCharArray(), x509Certificates, pfxPath)
 
-        val fos = FileOutputStream(File(crtPath))
-        fos.write(rootCertificate.encoded)
-        fos.close()
+        File(crtPath).writeBytes(rootCertificate.encoded)
     }
 
     @Throws(NoSuchAlgorithmException::class, NoSuchProviderException::class, InvalidKeyException::class, IOException::class, CertificateException::class, SignatureException::class, KeyStoreException::class)
     fun createRootCert(issuePfxPath: String, issueCrtPath: String) {
         createRootCert(issuePfxPath, issueCrtPath, X500Name(
                 "CN=RootCA,OU=hackwp,O=wp,L=BJ,S=BJ,C=CN"), "123456")
+    }
+
+    fun isKeyChainAccessible(context: Context, alias: String): Boolean {
+        return getCertificateChain(context, alias) != null && getPrivateKey(context, alias) != null
+    }
+
+    fun getPrivateKey(context: Context, alias: String): PrivateKey? {
+        try {
+            return KeyChain.getPrivateKey(context, alias)
+        } catch (e: KeyChainException) {
+            e.printStackTrace()
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        }
+
+        return null
+    }
+
+    fun getCertificateChain(context: Context, alias: String): Array<X509Certificate>? {
+        try {
+            return KeyChain.getCertificateChain(context, alias)
+        } catch (e: KeyChainException) {
+            e.printStackTrace()
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        }
+
+        return null
     }
 }
