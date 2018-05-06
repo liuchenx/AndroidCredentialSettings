@@ -22,7 +22,7 @@ class CertificateSettingsActivity : AppCompatActivity(), KeyChainAliasCallback {
         setContentView(R.layout.activity_certificate_settings)
 
         Thread {
-            if (CertificateHelper.isKeyChainAccessible(this@CertificateSettingsActivity, DEFAULT_ALIAS)) {
+            if (CertificateHelper.isKeyChainAccessible(this@CertificateSettingsActivity, getAlias())) {
                 disableKeyChainButton()
                 printInfo()
             } else {
@@ -41,13 +41,13 @@ class CertificateSettingsActivity : AppCompatActivity(), KeyChainAliasCallback {
 
                 CertificateHelper.createRootCert(pfxPath, crtPath)
 
-                installPkcsCredential(this, File(pfxPath).readBytes())
+                installPkcsCredential(this, File(crtPath).readBytes())
             }.start()
         }
     }
 
     private fun printInfo() {
-        val alias = DEFAULT_ALIAS
+        val alias = getAlias()
         val certs = CertificateHelper.getCertificateChain(this, alias)
         val privateKey = CertificateHelper.getPrivateKey(this, alias)
         val sb = StringBuffer()
@@ -62,11 +62,26 @@ class CertificateSettingsActivity : AppCompatActivity(), KeyChainAliasCallback {
 
     override fun alias(alias: String?) {
         if (alias != null) {
+            setAlias(alias)
             disableKeyChainButton()
             printInfo()
         } else {
             log(TAG, "User hit Disallow")
         }
+    }
+
+    private fun setAlias(alias: String) {
+        val pref = getSharedPreferences("KEYCHAIN_PREF",
+                Context.MODE_PRIVATE)
+        val editor = pref.edit()
+        editor.putString("KEYCHAIN_PREF_ALIAS", alias)
+        editor.commit()
+    }
+
+    private fun getAlias(): String {
+        val pref = getSharedPreferences("KEYCHAIN_PREF",
+                Context.MODE_PRIVATE)
+        return pref.getString("KEYCHAIN_PREF_ALIAS", DEFAULT_ALIAS)
     }
 
     private fun chooseCert() {

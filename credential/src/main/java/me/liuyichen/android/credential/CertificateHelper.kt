@@ -21,7 +21,7 @@ import java.security.cert.X509Certificate
  */
 object CertificateHelper {
 
-    public const val TYPE_PKCS12 = "PKCS12"
+    const val TYPE_PKCS12 = "PKCS12"
 
     @Throws(KeyStoreException::class, NoSuchAlgorithmException::class, CertificateException::class, IOException::class)
     private fun createKeyStore(alias: String, key: Key, password: CharArray,
@@ -40,8 +40,7 @@ object CertificateHelper {
                        x500Name: X500Name, password : String) {
 
         val secureRandom = SecureRandom.getInstance("SHA1PRNG")
-        val rootCertAndKeyGen = CertAndKeyGen("RSA",
-                "MD5WithRSA", null)
+        val rootCertAndKeyGen = CertAndKeyGen("RSA", "MD5WithRSA", null)
 
         rootCertAndKeyGen.setRandom(secureRandom)
 
@@ -60,6 +59,17 @@ object CertificateHelper {
 
     @Throws(NoSuchAlgorithmException::class, NoSuchProviderException::class, InvalidKeyException::class, IOException::class, CertificateException::class, SignatureException::class, KeyStoreException::class)
     fun createRootCert(issuePfxPath: String, issueCrtPath: String) {
+        // CN commonName 一般名字
+        // L localityName 地方名
+        // ST stateOrProvinceName 州省名
+        // O organizationName 组织名
+        // OU organizationalUnitName 组织单位名
+        // C countryName 国家
+        // STREET streetAddress 街道地址
+        // DC domainComponent 领域
+        // UID user id 用户ID
+//        val issue = X500Name(
+//                "CN=RootCA,OU=ISI,O=BenZeph,L=CD,ST=SC,C=CN")
         createRootCert(issuePfxPath, issueCrtPath, X500Name(
                 "CN=RootCA,OU=hackwp,O=wp,L=BJ,S=BJ,C=CN"), "123456")
     }
